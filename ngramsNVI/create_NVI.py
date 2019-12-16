@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_valence_data(language):
-    """ Load valence data from the largest available sets of affective word norms for four languages.
+    """ Load valence data from the affective word norms (ANEW).
 
     See Hills, T.T., Proto, E., Sgroi, D. et al. Historical analysis of national subjective wellbeing using millions of
     digitized books. Nat Hum Behav 3, 1271–1275 (2019) doi:10.1038/s41562-019-0750-z for more information on how this

@@ -11,7 +11,8 @@ Code to be able to reproduce the National Valence Indices created in the paper: 
 * pip install -e ./
 
 **How to create a National Valence Index**
-python create_NVI.py -l "ger" -d
+* cd ngramsNVI
+* python create_NVI.py -l "ger" -d
 
 
 

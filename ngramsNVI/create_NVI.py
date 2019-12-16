@@ -1,12 +1,12 @@
-import string
-import os
-import pandas as pd
-import wget
-import logging
-import glob
 import argparse
+import logging
+import os
+import string
+
+import pandas as pd
 
 from ngramsNVI.constants import PACKAGE_LOCATION
+from ngramsNVI.utils import rescale, download_nrgams_file, delete_ngrams_files
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,39 +45,47 @@ def load_valence_data(language):
     return valence_data
 
 
-def rescale(values, old_min, old_max, new_min, new_max):
-    output = []
+def match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath):
+    """
 
-    for v in values:
-        new_v = (new_max - new_min) * (v - old_min) / (old_max - old_min) + new_min
-        output.append(new_v)
+    Parameters
+    ----------
+    ngrams_fpath
 
-    return output
+    Returns
+    -------
 
+    """
+    ngrams_data = pd.read_table(ngrams_fpath, compression='gzip',
+                                names=["ngram", "year", "match_count", "volume_count"])
+    ngrams_data["ngram"] = ngrams_data["ngram"].str.lower()
 
-def download_nrgams_file(temp_directory, language, letter):
-    ngrams_url = "http://storage.googleapis.com/books/ngrams/books/googlebooks-{}-all-1gram-20120701-{}.gz".format(
-        language, letter)
-    ngrams_fpath = "{}/googlebooks-{}-all-1gram-20120701-{}.gz".format(temp_directory, language, letter)
+    ANEW_words = [k for k in valence_data.word]
+    ngrams_ANEW_words_data = ngrams_data[ngrams_data.ngram.isin(ANEW_words)]
 
-    if not os.path.exists(ngrams_fpath):
-        logger.info("Downloading {}".format(ngrams_fpath))
-        wget.download(ngrams_url, ngrams_fpath)
+    if len(ngrams_ANEW_words_data) > 0:
+        ngrams_ANEW_words_by_year = ngrams_ANEW_words_data.groupby(['ngram', 'year']).sum()
 
-    return ngrams_fpath
-
-
-def delete_ngrams_files(temp_directory):
-    files = glob.glob("{}/*".format(temp_directory))
-    for file_ in files:
-        logger.info("Deleting {}".format(file_))
-        os.remove(file_)
+        ngrams_valence_scores = pd.merge(ngrams_ANEW_words_by_year.reset_index(), valence_data, how='left',
+                                         left_on=['ngram'], right_on=['word'])
+        return ngrams_valence_scores
 
 
-def processValence(temp_directory, language, valence_data, delete_files):
+def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_files):
+    """
+
+    Parameters
+    ----------
+    temp_directory
+    language
+    valence_data
+    delete_files
+
+    Returns
+    -------
+
+    """
     letters = string.ascii_lowercase
-
-    letters = ["x", "y", "z"]
 
     ngrams_valence_scores_all_letters = []
 
@@ -86,20 +94,9 @@ def processValence(temp_directory, language, valence_data, delete_files):
 
         ngrams_fpath = download_nrgams_file(temp_directory, language, letter)
 
-        ngrams_data = pd.read_table(ngrams_fpath, compression='gzip',
-                                    names=["ngram", "year", "match_count", "volume_count"])
-        ngrams_data["ngram"] = ngrams_data["ngram"].str.lower()
+        ngrams_valence_scores = match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath)
 
-        ANEW_words = [k for k in valence_data.Word]
-        ngrams_ANEW_words_data = ngrams_data[ngrams_data.ngram.isin(ANEW_words)]
-
-        if (len(ngrams_ANEW_words_data) > 0):
-            ngrams_ANEW_words_by_year = ngrams_ANEW_words_data.groupby(['ngram', 'year']).sum()
-
-            ngrams_valence_scores = pd.merge(ngrams_ANEW_words_by_year.reset_index(), valence_data, how='left',
-                                             left_on=['ngram'], right_on=['Word'])
-
-            ngrams_valence_scores_all_letters.append(ngrams_valence_scores)
+        ngrams_valence_scores_all_letters.append(ngrams_valence_scores)
 
         if delete_files:
             os.remove(ngrams_fpath)
@@ -110,11 +107,23 @@ def processValence(temp_directory, language, valence_data, delete_files):
 
 
 def create_NVI(language, valence_data, delete_files=False):
+    """
+
+    Parameters
+    ----------
+    language
+    valence_data
+    delete_files
+
+    Returns
+    -------
+
+    """
     # Set up temporary directory to store large files
     temp_directory = "{}/googlebooksdata".format(PACKAGE_LOCATION)
     os.makedirs(temp_directory, exist_ok=True)
 
-    ngrams_valence_data = processValence(temp_directory, language, valence_data, delete_files)
+    ngrams_valence_data = add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_files)
 
     logger.info("Calculating valence scores")
 
@@ -126,29 +135,28 @@ def create_NVI(language, valence_data, delete_files=False):
             ngrams_valence_data["match_count"] / ngrams_valence_data["match_totals"])
 
     # Saving valence score for all words
-    ngrams_valence_data.to_csv("{}/data/{}_valence_ngram_words.csv".format(PACKAGE_LOCATION, language))
+    ngrams_valence_data.to_csv("{}/data/{}_valence_ngram_words.csv".format(PACKAGE_LOCATION, language), index=False)
 
     # Saving NVI for all words
-
     NVI_data = ngrams_valence_data[["year", "match_count", "val_score"]].groupby(['year']).sum()
-    NVI_data.to_csv("{}/data/{}_NVI.csv".format(PACKAGE_LOCATION, language))
+    NVI_data.to_csv("{}/data/{}_NVI.csv".format(PACKAGE_LOCATION, language), index=False)
 
     # Checking for any unprocessed words, as some words will not be found in google ngrams if they are compound words
-    unprocessed_words = list(set(valence_data['Word']) - set(ngrams_valence_data['ngram']))
-    logger.info("These words could not be processed {}".format( unprocessed_words))
-    pd.DataFrame(unprocessed_words).to_csv("{}/data/{}_unprocessed_words.csv".format(PACKAGE_LOCATION, language))
+    unprocessed_words = list(set(valence_data['word']) - set(ngrams_valence_data['ngram']))
+    logger.info("These words could not be processed {}".format(unprocessed_words))
+    pd.DataFrame(unprocessed_words).to_csv("{}/data/{}_unprocessed_words.csv".format(PACKAGE_LOCATION, language),
+                                           index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Run a face similarity model on a folder of face images.')
+        description='Create a National Valence Index for one of the following languages: Italian (ita), '
+                    'EnglishGB (eng-gb), Engligh US (eng-us), Spanich (spa), Frence(fre), or German (ger).')
 
-    parser.add_argument('-l', '--language', default='resnet50',
-                        choices=['ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'],
+    parser.add_argument('-l', '--language', choices=['ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'],
                         help='The language to process')
     parser.add_argument("-d", "--delete_files", help="Whether to delete files as they are being processed to save "
-                                                     "on disk space",
-                        action='store_true')
+                                                     "on disk space", action='store_true')
 
     args = parser.parse_args()
 

@@ -139,13 +139,15 @@ def create_NVI(language, valence_data, delete_files=False):
 
     # Saving NVI for all words
     NVI_data = ngrams_valence_data[["year", "match_count", "val_score"]].groupby(['year']).sum()
-    NVI_data.to_csv("{}/data/{}_NVI.csv".format(PACKAGE_LOCATION, language), index=False)
+    NVI_data.to_csv("{}/data/{}_NVI.csv".format(PACKAGE_LOCATION, language))
 
     # Checking for any unprocessed words, as some words will not be found in google ngrams if they are compound words
     unprocessed_words = list(set(valence_data['word']) - set(ngrams_valence_data['ngram']))
     logger.info("These words could not be processed {}".format(unprocessed_words))
-    pd.DataFrame(unprocessed_words).to_csv("{}/data/{}_unprocessed_words.csv".format(PACKAGE_LOCATION, language),
-                                           index=False)
+    with open("{}/data/{}_unprocessed_words.txt".format(PACKAGE_LOCATION, language), 'a') as file_:
+        for word in unprocessed_words:
+            file_.write("{}\n".format(word))
+
 
 
 if __name__ == '__main__':

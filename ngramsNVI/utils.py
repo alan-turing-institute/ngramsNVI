@@ -8,16 +8,22 @@ logger = logging.getLogger(__name__)
 
 
 def download_nrgams_file(temp_directory, language, letter):
-    """
+    """ Download ngrams data from http://storage.googleapis.com/books/ngrams/books/datasetsv2.html
 
     Parameters
     ----------
-    temp_directory
-    language
-    letter
+    temp_directory: str
+        Path of temporary directory
+    language: str
+       Which of the following languages to process 'ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'
+    letter: str
+        Letter which needs to be processed
 
     Returns
     -------
+    ngrams_fpath: str
+        Path of nrgams file which needs to be processed
+
 
     """
     ngrams_url = "http://storage.googleapis.com/books/ngrams/books/googlebooks-{}-all-1gram-20120701-{}.gz".format(
@@ -36,7 +42,8 @@ def delete_ngrams_files(temp_directory):
 
     Parameters
     ----------
-    temp_directory
+    temp_directory: str
+        Path of temporary directory
 
     Returns
     -------
@@ -49,18 +56,7 @@ def delete_ngrams_files(temp_directory):
 
 
 def rescale(values, old_min, old_max, new_min, new_max):
-    """
-
-    Parameters
-    ----------
-    values
-    old_min
-    old_max
-    new_min
-    new_max
-
-    Returns
-    -------
+    """Rescale a set of values into a new min and max
 
     """
     output = []

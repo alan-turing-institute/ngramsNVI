@@ -6,7 +6,7 @@ import string
 import pandas as pd
 
 from ngramsNVI.constants import PACKAGE_LOCATION
-from ngramsNVI.utils import rescale, download_nrgams_file, delete_ngrams_files
+from ngramsNVI.utils import rescale, download_nrgams_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,12 +50,23 @@ def match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath):
 
     Parameters
     ----------
-    ngrams_fpath
+    valence_data: pd.DataFrame
+        Pandas DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
+    ngrams_fpath: str
+        Path of nrgams file which needs to be processed
 
     Returns
     -------
+    ngrams_valence_scores: pd.DataFrame
+        Pandas DataFrame for one ngrams letter with the following columns:
+            nrgram - ANEW word found in nrgams
+            year - year of data
+            match_count- amount of times the word was found
+            volume_count - amount of volumes the word was found in
+            valence - score from ANEW
 
     """
+
     ngrams_data = pd.read_table(ngrams_fpath, compression='gzip',
                                 names=["ngram", "year", "match_count", "volume_count"])
     ngrams_data["ngram"] = ngrams_data["ngram"].str.lower()
@@ -68,6 +79,7 @@ def match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath):
 
         ngrams_valence_scores = pd.merge(ngrams_ANEW_words_by_year.reset_index(), valence_data, how='left',
                                          left_on=['ngram'], right_on=['word'])
+        ngrams_valence_scores = ngrams_valence_scores.drop(['word'], axis=1)
         return ngrams_valence_scores
 
 
@@ -76,18 +88,30 @@ def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_fi
 
     Parameters
     ----------
-    temp_directory
-    language
-    valence_data
-    delete_files
+    temp_directory: str
+        Temp directory location
+    language: str
+       Which of the following languages to process 'ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'
+    valence_data: pd.DataFrame
+        Pandas DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
+    delete_files: bool
+        Whether to delete the file downloaded from ngrams to save on disk space
 
     Returns
     -------
+    ngrams_valence_scored_all_letters: pd.DataFrame
+        Pandas DataFrame for all nrgams letter with the following columns:
+            nrgram - ANEW word found in nrgams
+            year - year of data
+            match_count- amount of times the word was found
+            volume_count - amount of volumes the word was found in
+            valence - score from ANEW
+
 
     """
     letters = string.ascii_lowercase
 
-    ngrams_valence_scores_all_letters = []
+    ngrams_valence_scores_all_letters_list = []
 
     for letter in letters:
         logger.info("Downloading data for {} {}".format(language, letter))
@@ -96,27 +120,38 @@ def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_fi
 
         ngrams_valence_scores = match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath)
 
-        ngrams_valence_scores_all_letters.append(ngrams_valence_scores)
+        ngrams_valence_scores_all_letters_list.append(ngrams_valence_scores)
 
         if delete_files:
             os.remove(ngrams_fpath)
 
-    ngrams_valence_data = pd.concat(ngrams_valence_scores_all_letters)
+    ngrams_valence_scored_all_letters = pd.concat(ngrams_valence_scores_all_letters_list)
 
-    return ngrams_valence_data
+    return ngrams_valence_scored_all_letters
 
 
 def create_NVI(language, valence_data, delete_files=False):
-    """
+    """ Create a National Valence Index using Google Ngrams data
+    (http://storage.googleapis.com/books/ngrams/books/datasetsv2.html) and the affective word norms (ANEW) for one of
+    the following languages: Italian (ita), EnglishGB (eng-gb), Engligh US (eng-us), Spanish (spa), French(fre), or
+    German(ger).
+
+    This function saves the associated files (valence scores with ngrams counts, NVI and missing words which were unable
+    to be processed) for a language in the "data" directory
 
     Parameters
     ----------
-    language
-    valence_data
-    delete_files
+    language: str
+       Which of the following languages to process 'ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'
+    valence_data: pd.DataFrame
+        DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
+    delete_files: bool
+        Whether to delete the file downloaded from ngrams to save on disk space
+
 
     Returns
     -------
+    None
 
     """
     # Set up temporary directory to store large files
@@ -134,7 +169,7 @@ def create_NVI(language, valence_data, delete_files=False):
     ngrams_valence_data["val_score"] = ngrams_valence_data["valence"] * (
             ngrams_valence_data["match_count"] / ngrams_valence_data["match_totals"])
 
-    # Saving valence score for all words
+    # Saving valence scores for all words
     ngrams_valence_data.to_csv("{}/data/{}_valence_ngram_words.csv".format(PACKAGE_LOCATION, language), index=False)
 
     # Saving NVI for all words
@@ -149,11 +184,12 @@ def create_NVI(language, valence_data, delete_files=False):
             file_.write("{}\n".format(word))
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Create a National Valence Index for one of the following languages: Italian (ita), '
-                    'EnglishGB (eng-gb), Engligh US (eng-us), Spanich (spa), Frence(fre), or German (ger).')
+        description='Create a National Valence Index using Google Ngrams data '
+                    '(http://storage.googleapis.com/books/ngrams/books/datasetsv2.html) and the affective word norms '
+                    '(ANEW) for one of the following languages: Italian (ita), EnglishGB (eng-gb), '
+                    'Engligh US (eng-us), Spanish (spa), French(fre), or German(ger).')
 
     parser.add_argument('-l', '--language', choices=['ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'],
                         help='The language to process')

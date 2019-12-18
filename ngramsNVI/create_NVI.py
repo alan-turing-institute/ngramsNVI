@@ -28,7 +28,7 @@ def load_valence_data(language):
 
     Returns
     -------
-    valence_data: pd.dataframe
+    valence_data: Pandas.DataFrame
         Dataframe with index of words and their associated valence score
 
     """
@@ -50,15 +50,15 @@ def merge_ngrams_and_ANEW_data(valence_data, ngrams_fpath):
 
     Parameters
     ----------
-    valence_data: pd.DataFrame
-        Pandas DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
+    valence_data: Pandas.DataFrame
+        DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
     ngrams_fpath: str
         Path of nrgams file which needs to be processed
 
     Returns
     -------
-    ngrams_valence_scores: pd.DataFrame
-        Pandas DataFrame for one ngrams letter with the following columns:
+    ngrams_valence_scores: Pandas.DataFrame
+        DataFrame for one ngrams letter with the following columns:
             nrgram - ANEW word found in nrgams
             year - year of data
             match_count- amount of times the word was found
@@ -92,15 +92,15 @@ def process_nrgams_data(temp_directory, language, valence_data, delete_files):
         Temp directory location
     language: str
        Which of the following languages to process 'ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'
-    valence_data: pd.DataFrame
-        Pandas DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
+    valence_data: Pandas.DataFrame
+        DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
     delete_files: bool
         Whether to delete the file downloaded from ngrams to save on disk space
 
     Returns
     -------
-    ngrams_valence_scores_all_letters: pd.DataFrame
-        Pandas DataFrame for all nrgams letter with the following columns:
+    ngrams_valence_scores_all_letters: Pandas.DataFrame
+        DataFrame for all nrgams letter with the following columns:
             nrgram - ANEW word found in nrgams
             year - year of data
             match_count- amount of times the word was found
@@ -143,7 +143,7 @@ def create_NVI(language, valence_data, delete_files=False):
     ----------
     language: str
        Which of the following languages to process 'ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'
-    valence_data: pd.DataFrame
+    valence_data: Pandas.DataFrame
         DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
     delete_files: bool
         Whether to delete the file downloaded from ngrams to save on disk space

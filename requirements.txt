@@ -2,3 +2,4 @@ numpy==1.17.4
 pandas==0.25.3
 Unidecode==1.1.1
 wget==3.2
+pytest==5.3.2

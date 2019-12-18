@@ -146,7 +146,7 @@ def create_NVI(language, valence_data, delete_files=False):
     valence_data: Pandas.DataFrame
         DataFrame including the columns: words (ANEW words), valence (ANEW scores for each word)
     delete_files: bool
-        Whether to delete the file downloaded from ngrams to save on disk space
+        Whether to delete downloaded ngrams files after processing
 
 
     Returns
@@ -193,8 +193,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-l', '--language', choices=['ita', 'eng-gb', 'eng-us', 'spa', 'fre', 'ger'],
                         help='The language to process')
-    parser.add_argument("-d", "--delete_files", help="Whether to delete files as they are being processed to save "
-                                                     "on disk space", action='store_true')
+    parser.add_argument("-d", "--delete_files", help="Whether to delete downloaded ngrams files after processing",
+                        action='store_true')
 
     args = parser.parse_args()
 

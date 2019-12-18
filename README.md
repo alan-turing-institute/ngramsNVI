@@ -16,6 +16,8 @@ Code to be able reproduce the National Valence Indices created using Google Ngra
 **How to create a National Valence Index**
 * cd ngramsNVI
 * python create_NVI.py -l "ger" -d
+    * -l --language {ita,eng-gb,eng-us,spa,fre,ger} The language to process
+    * -d --delete_files Whether to delete downloaded ngrams files after processing
 
 
 

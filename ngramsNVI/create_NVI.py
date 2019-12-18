@@ -45,8 +45,8 @@ def load_valence_data(language):
     return valence_data
 
 
-def match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath):
-    """
+def merge_ngrams_and_ANEW_data(valence_data, ngrams_fpath):
+    """Add valence scores from ANEW to downloaded Google ngrams data
 
     Parameters
     ----------
@@ -83,8 +83,8 @@ def match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath):
         return ngrams_valence_scores
 
 
-def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_files):
-    """
+def process_nrgams_data(temp_directory, language, valence_data, delete_files):
+    """Process nrgrams data for all letters for a chosen language
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_fi
 
     Returns
     -------
-    ngrams_valence_scored_all_letters: pd.DataFrame
+    ngrams_valence_scores_all_letters: pd.DataFrame
         Pandas DataFrame for all nrgams letter with the following columns:
             nrgram - ANEW word found in nrgams
             year - year of data
@@ -111,23 +111,23 @@ def add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_fi
     """
     letters = string.ascii_lowercase
 
-    ngrams_valence_scores_all_letters_list = []
+    ngrams_valence_scores_processed = []
 
     for letter in letters:
         logger.info("Downloading data for {} {}".format(language, letter))
 
         ngrams_fpath = download_nrgams_file(temp_directory, language, letter)
 
-        ngrams_valence_scores = match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath)
+        ngrams_valence_scores = merge_ngrams_and_ANEW_data(valence_data, ngrams_fpath)
 
-        ngrams_valence_scores_all_letters_list.append(ngrams_valence_scores)
+        ngrams_valence_scores_processed.append(ngrams_valence_scores)
 
         if delete_files:
             os.remove(ngrams_fpath)
 
-    ngrams_valence_scored_all_letters = pd.concat(ngrams_valence_scores_all_letters_list)
+    ngrams_valence_scores_all_letters = pd.concat(ngrams_valence_scores_processed)
 
-    return ngrams_valence_scored_all_letters
+    return ngrams_valence_scores_all_letters
 
 
 def create_NVI(language, valence_data, delete_files=False):
@@ -158,7 +158,7 @@ def create_NVI(language, valence_data, delete_files=False):
     temp_directory = "{}/googlebooksdata".format(PACKAGE_LOCATION)
     os.makedirs(temp_directory, exist_ok=True)
 
-    ngrams_valence_data = add_valence_to_nrgams_data(temp_directory, language, valence_data, delete_files)
+    ngrams_valence_data = process_nrgams_data(temp_directory, language, valence_data, delete_files)
 
     logger.info("Calculating valence scores")
 

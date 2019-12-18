@@ -1,6 +1,6 @@
 import os
 
-from ngramsNVI.create_NVI import load_valence_data, match_ngram_counts_with_valence_scores
+from ngramsNVI.create_NVI import load_valence_data, merge_ngrams_and_ANEW_data
 from ngramsNVI.utils import download_nrgams_file
 from ngramsNVI.constants import PACKAGE_LOCATION
 
@@ -19,7 +19,7 @@ def test_ngrams_valence_processing():
 
     ngrams_fpath = download_nrgams_file(temp_directory, language, letter)
 
-    ngrams_valence_scores = match_ngram_counts_with_valence_scores(valence_data, ngrams_fpath)
+    ngrams_valence_scores = merge_ngrams_and_ANEW_data(valence_data, ngrams_fpath)
 
     zucchero_data = ngrams_valence_scores[
         (ngrams_valence_scores['ngram'] == "zucchero") & (ngrams_valence_scores['year'] == 2009)]
